@@ -1,0 +1,23 @@
+{
+  "name": "Home Essence",
+  "short_name": "HomeEssence",
+  "description": "Tienda en linea de articulos para el hogar",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#F6B68E",
+  "orientation": "portrait",
+  "scope": "./",
+  "icons": [
+  {
+    "src": "icons/icon-192.png",
+    "sizes": "192x192",
+    "type": "image/png"
+  },
+  {
+    "src": "icons/icon-512.png",
+    "sizes": "512x512",
+    "type": "image/png"
+  }
+]
+}

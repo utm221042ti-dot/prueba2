@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Productos</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
+
+  <style>
+    .thumb { object-fit: cover; height: 100px; border-radius: .5rem; }
+    .thumbs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap:0.5rem }
+    body { background-color: #f5f5f5; }
+    .navbar { box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+  </style>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest"/>
+</head>
+<body style="background-color: #f5f5f5; ">
+
+  <!-- Navbar (Productos solo admin) -->
+  <nav class="navbar navbar-expand-lg fixed-top" style="background-color: #F6B68E; padding-top: 15px; padding-bottom: 15px;">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="index.html">Home Essence</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-center">
+          <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
+
+          <!-- SOLO admin -->
+          <li class="nav-item" id="navProductosItem" style="display:none;">
+            <a class="nav-link active" aria-current="page" href="productos.html">Productos</a>
+          </li>
+
+          <li class="nav-item"><a class="nav-link" href="tienda.html">Tienda</a></li>
+
+          <li class="nav-item dropdown d-flex align-items-center">
+            <a class="nav-link" href="login.html">
+              <i class="bi bi-person-fill"></i>
+              <span id="userName">Login</span>
+            </a>
+            <span id="userDropdown" class="custom-dropdown-arrow" data-bs-toggle="dropdown"></span>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" id="logoutBtn" href="#">Cerrar sesión</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenido de productos (oculto por defecto, se muestra solo si es admin) -->
+  <main id="adminContent" class="container mt-4 d-none" style="padding: 80px;">
+    <div class="text-center mb-4">
+      <h1 class="heading-1 mb-3">Productos</h1>
+      <button type="button"
+              class="btn btn-lg text-white" style="background-color: #D8917C;"
+              id="btnNuevoProducto"
+              data-bs-toggle="modal"
+              data-bs-target="#productoModal">
+        Registrar Nuevo Producto
+      </button>
+    </div>
+    <div id="productsContainer" class="row mt-4"></div>
+  </main>
+
+  <!-- Modal crear/editar producto -->
+  <!-- (igual que antes, lo dejo tal cual) -->
+  <div class="modal fade" id="productoModal" tabindex="-1" aria-labelledby="productoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="productoModalLabel">Registro de Nuevo Producto</h5>
+          <button type="button" class="btn-close btn-close-secondary" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="productoForm">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="claveProducto" class="form-label">Clave *</label>
+                <input type="text" class="form-control" id="claveProducto" placeholder="Ej: PR001" required>
+              </div>
+
+              <div class="col-md-6">
+                <label for="nombreProducto" class="form-label">Nombre del Producto *</label>
+                <input type="text" class="form-control" id="nombreProducto" placeholder="Ej: Lavadora" required>
+              </div>
+
+              <div class="col-md-6">
+                <label for="precio" class="form-label">Precio *</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="precio" placeholder="0.00" step="0.01" required>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label for="stock" class="form-label">Stock *</label>
+                <input type="number" class="form-control" id="stock" placeholder="Cantidad disponible" required>
+              </div>
+
+              <div class="col-md-6">
+                <label for="categoria" class="form-label">Categoría *</label>
+                <select id="categoria" class="form-select" required>
+                  <option value="">Selecciona una categoria</option>
+                  <option value="Sala">Sala</option>
+                  <option value="Cocina">Cocina</option>
+                  <option value="Recamara">Recámara</option>
+                  <option value="Comedor">Comedor</option>
+                  <option value="Baño">Baño</option>
+                  <option value="Decoración">Decoración</option>
+                </select>
+              </div>
+
+              <div class="col-12">
+                <label for="descripcion" class="form-label">Descripción</label>
+                <textarea class="form-control" id="descripcion" rows="3" placeholder="Describe brevemente el producto..."></textarea>
+              </div>
+
+              <div class="col-12">
+                <label for="imagenes" class="form-label">Imágenes del Producto (puedes subir una o varias)</label>
+                <input type="file" id="imagenes" class="form-control" accept="image/*" multiple>
+                <div id="previewImagenes" class="thumbs-grid mt-2"></div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" form="productoForm" class="btn text-white" style="background-color: #D8917C;" id="submitBtn">
+            <span class="spinner-border spinner-border-sm d-none" id="submitSpinner"></span>
+            <span id="submitBtnText">Guardar Producto</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Firebase config -->
+  <script src="firebase-config.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp,
+      onSnapshot,
+      query,
+      orderBy,
+      deleteDoc,
+      doc,
+      enableIndexedDbPersistence,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const app  = initializeApp(window.firebaseConfig);
+    const db   = getFirestore(app);
+    const auth = getAuth(app);
+
+    enableIndexedDbPersistence(db)
+      .then(() => console.log("Persistencia offline habilitada - Productos"))
+      .catch(err => console.log("Persistencia no disponible", err));
+
+    const modal              = new bootstrap.Modal(document.getElementById('productoModal'));
+    const form               = document.getElementById('productoForm');
+    const container          = document.getElementById('productsContainer');
+    const imagenesInput      = document.getElementById('imagenes');
+    const previewDiv         = document.getElementById('previewImagenes');
+    const productoModalLabel = document.getElementById('productoModalLabel');
+    const submitBtn          = document.getElementById('submitBtn');
+    const submitBtnText      = document.getElementById('submitBtnText');
+    const btnNuevoProducto   = document.getElementById('btnNuevoProducto');
+    const adminContent       = document.getElementById('adminContent');
+
+    const userNameSpan       = document.getElementById('userName');
+    const logoutBtn          = document.getElementById('logoutBtn');
+    const navProductosItem   = document.getElementById('navProductosItem');
+
+    let currentUser = null;
+    let isAdmin     = false;
+    let lastProductosCache = [];
+    let editingProductId   = null;
+
+    function currencyMXN(n) {
+      const v = Number(n);
+      if (!Number.isFinite(v)) return '0.00';
+      return v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Control de sesión + visibilidad de Productos solo admin
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user || null;
+      isAdmin = !!(user && user.email && user.email.endsWith('@admin.com'));
+
+      if (user) {
+        userNameSpan.textContent = user.displayName || user.email || 'Usuario';
+        logoutBtn.style.display  = 'inline';
+      } else {
+        userNameSpan.textContent = 'Login';
+        logoutBtn.style.display  = 'none';
+      }
+
+      // Mostrar/ocultar CONTENIDO y LINK de Productos
+      if (isAdmin) {
+        adminContent.classList.remove('d-none');
+        btnNuevoProducto.style.display = 'inline-block';
+        if (navProductosItem) navProductosItem.style.display = 'block';
+      } else {
+        adminContent.classList.add('d-none');
+        btnNuevoProducto.style.display = 'none';
+        if (navProductosItem) navProductosItem.style.display = 'none';
+      }
+
+      renderProducts(lastProductosCache);
+    });
+
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          await signOut(auth);
+          alert('Sesión cerrada');
+          window.location.href = 'index.html';
+        } catch (error) {
+          alert('Error al cerrar sesión: ' + error.message);
+        }
+      });
+    }
+
+    // Preview imágenes
+    imagenesInput.addEventListener('change', function(e) {
+      previewDiv.innerHTML = '';
+      const files = Array.from(e.target.files);
+      files.forEach(file => {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.className = 'thumb w-100';
+          img.style.objectFit = 'cover';
+          previewDiv.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    function renderProducts(productos) {
+      lastProductosCache = productos || [];
+      container.innerHTML = '';
+
+      if (!productos || productos.length === 0) {
+        container.innerHTML = `
+          <div class="col-12 text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h4 class="text-muted mt-3">No hay productos</h4>
+            <p class="text-muted">Agrega tu primer producto haciendo clic en "Registrar Nuevo Producto"</p>
+          </div>
+        `;
+        return;
+      }
+
+      productos.forEach((producto) => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6 col-lg-4 mb-4';
+
+        const imagenesHTML = Array.isArray(producto.imagenes) && producto.imagenes.length > 0
+          ? producto.imagenes.map(url => `<img src="${url}" class="thumb" alt="${producto.nombre}">`).join('')
+          : `<img src="${producto.imagenUrl || 'https://via.placeholder.com/100x100?text=Sin+Imagen'}" class="thumb" alt="${producto.nombre}">`;
+
+        const adminButtonsHTML = isAdmin ? `
+          <button class="btn btn-sm w-50 text-white" style="background-color: #D8917C;" data-action="edit" data-id="${producto.id}">
+            <i class="bi bi-pencil text-white"></i> Editar
+          </button>
+          <button class="btn btn-sm btn-danger w-50" data-action="delete" data-id="${producto.id}">
+            <i class="bi bi-trash3"></i> Eliminar
+          </button>
+        ` : `<small class="text-muted">Solo lectura</small>`;
+
+        col.innerHTML = `
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <div class="thumbs-grid mb-3">
+                ${imagenesHTML}
+              </div>
+              <h5 class="card-title">${producto.nombre}</h5>
+              <p class="card-text">${producto.descripcion || ''}</p>
+              <p class="card-text">
+                <strong>Precio:</strong> $${currencyMXN(producto.precio)}<br>
+                <strong>Categoría:</strong> ${producto.categoria || ''}<br>
+                <strong>Stock:</strong>
+                <span class="badge ${producto.stock > 0 ? 'bg-success' : 'bg-danger'}">${producto.stock}</span>
+              </p>
+            </div>
+            <div class="card-footer d-flex gap-2 justify-content-end">
+              ${adminButtonsHTML}
+            </div>
+          </div>
+        `;
+        container.appendChild(col);
+      });
+
+      if (isAdmin) {
+        container.querySelectorAll('[data-action="delete"]').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const id = e.currentTarget.getAttribute('data-id');
+            if (id && confirm('¿Eliminar este producto?')) {
+              await deleteDoc(doc(db,'productos', id));
+            }
+          });
+        });
+
+        container.querySelectorAll('[data-action="edit"]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const id = e.currentTarget.getAttribute('data-id');
+            const producto = lastProductosCache.find(p => p.id === id);
+            if (!producto) return;
+
+            document.getElementById('claveProducto').value = producto.clave || '';
+            document.getElementById('nombreProducto').value = producto.nombre || '';
+            document.getElementById('precio').value = producto.precio || 0;
+            document.getElementById('stock').value = producto.stock || 0;
+            document.getElementById('categoria').value = producto.categoria || '';
+            document.getElementById('descripcion').value = producto.descripcion || '';
+            imagenesInput.value = '';
+            previewDiv.innerHTML = '';
+
+            editingProductId = id;
+            productoModalLabel.textContent = 'Editar Producto';
+            submitBtnText.textContent = 'Actualizar Producto';
+            modal.show();
+          });
+        });
+      }
+    }
+
+    const productosRef = collection(db, 'productos');
+    const q = query(productosRef, orderBy('createdAt', 'desc'));
+
+    onSnapshot(q, (snap) => {
+      const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderProducts(arr);
+    }, (error) => {
+      console.error('Error en snapshot:', error);
+    });
+
+    const cloudName   = "dcbdtbkqu";
+    const uploadPreset = "pwa_unsigned";
+
+    async function uploadImagesToCloudinary(files) {
+      const urls = [];
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", uploadPreset);
+        formData.append("folder", "productos");
+        try {
+          const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json();
+          if (data.secure_url) urls.push(data.secure_url);
+        } catch (err) {
+          console.error('Error subiendo imagen', err);
+        }
+      }
+      return urls;
+    }
+
+    btnNuevoProducto.addEventListener('click', () => {
+      editingProductId = null;
+      form.reset();
+      previewDiv.innerHTML = '';
+      productoModalLabel.textContent = 'Registro de Nuevo Producto';
+      submitBtnText.textContent = 'Guardar Producto';
+    });
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const spinner = document.getElementById('submitSpinner');
+      submitBtn.disabled = true;
+      spinner.classList.remove('d-none');
+
+      const clave = document.getElementById('claveProducto').value.trim();
+      const nombre = document.getElementById('nombreProducto').value.trim();
+      const precio = parseFloat(document.getElementById('precio').value) || 0;
+      const stock = parseInt(document.getElementById('stock').value) || 0;
+      const categoria = document.getElementById('categoria').value;
+      const descripcion = document.getElementById('descripcion').value.trim();
+
+      try {
+        let imagenesUrls = [];
+        let imagenUrl = '';
+
+        if (editingProductId) {
+          const existing = lastProductosCache.find(p => p.id === editingProductId) || {};
+          imagenesUrls = Array.isArray(existing.imagenes) ? existing.imagenes : [];
+          imagenUrl = existing.imagenUrl || (imagenesUrls[0] || '');
+        }
+
+        if (imagenesInput.files.length > 0) {
+          const nuevas = await uploadImagesToCloudinary(Array.from(imagenesInput.files));
+          if (nuevas.length > 0) {
+            imagenesUrls = nuevas;
+            imagenUrl = nuevas[0];
+          }
+        }
+
+        const data = {
+          clave,
+          nombre,
+          precio,
+          categoria,
+          stock,
+          descripcion,
+          imagenes: imagenesUrls,
+          imagenUrl: imagenUrl
+        };
+
+        if (editingProductId) {
+          await updateDoc(doc(db, 'productos', editingProductId), data);
+          showAlert('Producto actualizado correctamente!', 'success');
+        } else {
+          await addDoc(productosRef, {
+            ...data,
+            createdAt: serverTimestamp()
+          });
+          showAlert('Producto guardado correctamente!', 'success');
+        }
+
+        e.target.reset();
+        previewDiv.innerHTML = '';
+        editingProductId = null;
+        productoModalLabel.textContent = 'Registro de Nuevo Producto';
+        submitBtnText.textContent = 'Guardar Producto';
+        modal.hide();
+
+      } catch (err) {
+        console.error('Error guardando producto:', err);
+        showAlert('Ocurrió un error al guardar el producto', 'danger');
+      } finally {
+        submitBtn.disabled = false;
+        spinner.classList.add('d-none');
+      }
+    });
+
+    function showAlert(message, type) {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+      alertDiv.style.zIndex = `1060`;
+      alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.body.appendChild(alertDiv);
+      setTimeout(() => alertDiv.remove(), 5000);
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('sw register failed', err));
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tienda</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <style>
+    body { background-color: #f5f5f5; }
+    .navbar { box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+    .navbar-brand { font-weight: 600; }
+    .custom-dropdown-arrow { cursor: pointer; padding: 0 4px; font-size: 0.85rem; }
+    .custom-dropdown-arrow:hover { opacity: 0.7; }
+
+    .product-img {
+      height: 200px;
+      object-fit: cover;
+      width: 100%;
+      border-radius: 0.5rem 0.5rem 0 0;
+    }
+    .thumb-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+      gap: 0.25rem;
+      margin-top: 0.5rem;
+      padding: 0 0.75rem;
+    }
+    .thumb {
+      width: 100%;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 0.25rem;
+    }
+
+    .cart-item-img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 0.25rem;
+    }
+    .offcanvas-header { border-bottom: 1px solid #e5e5e5; }
+    .offcanvas-body { display: flex; flex-direction: column; gap: 1rem; }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg fixed-top" style="background-color: #F6B68E; padding-top: 15px; padding-bottom: 15px;">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="index.html">Home Essence</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-center">
+          <li class="nav-item">
+            <a class="nav-link" href="index.html">Inicio</a>
+          </li>
+
+          <!-- SOLO admin: se muestra si el correo termina en @admin.com -->
+          <li class="nav-item" id="navProductosItem" style="display:none;">
+            <a class="nav-link" href="productos.html">Productos</a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="tienda.html">Tienda</a>
+          </li>
+
+          <!-- Botón carrito en el header -->
+          <li class="nav-item me-3">
+            <button class="btn position-relative" style="background-color: #F4A777;" type="button"
+                    data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+              <i class="bi bi-cart3"></i>
+              <span id="cart-badge"
+                    class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none"></span>
+            </button>
+          </li>
+
+          <!-- Usuario -->
+          <li class="nav-item dropdown d-flex align-items-center">
+            <a class="nav-link" href="login.html">
+              <i class="bi bi-person-fill"></i>
+              <span id="userName">Login</span>
+            </a>
+            <span id="userDropdown" class="custom-dropdown-arrow" data-bs-toggle="dropdown"></span>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" id="logoutBtn" href="#">Cerrar sesión</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenido -->
+  <main class="container" style="padding-top: 90px; padding-bottom: 40px;">
+    <h1 class="mb-4">Tienda</h1>
+
+    <!-- NUEVO: barra de filtros de categoría dentro de la tienda -->
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <span class="fw-semibold me-2">Filtrar por categoría:</span>
+      <!-- data-filter se usa en JS para saber qué categoría aplicar -->
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-filter="TODAS">Todas</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-filter="Sala">Sala</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-filter="Cocina">Cocina</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-filter="Recamara">Recámara</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-filter="Comedor">Comedor</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-filter="Baño">Baño</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-filter="Decoración">Decoración</button>
+    </div>
+
+    <hr class="mt-0 mb-4">
+
+    <div id="productos" class="row"></div>
+  </main>
+
+  <!-- Offcanvas carrito -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">Carrito de Compras</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div id="carrito-contenido">
+        <ul id="lista-carrito" class="list-group mb-3"></ul>
+        <div class="border-top pt-3 mt-auto">
+          <p class="h5"><strong>Total:</strong> $<span id="total">0</span></p>
+          <div class="d-grid gap-2">
+            <button id="limpiar-carrito" class="btn btn-outline-danger">
+              <i class="bi bi-trash"></i> Vaciar Carrito
+            </button>
+            <button id="pagar" class="btn btn-success">
+              <i class="bi bi-credit-card"></i> Pagar Ahora
+            </button>
+            <a href="index.html" class="btn btn-outline-secondary">
+              <i class="bi bi-house"></i> Volver al Inicio
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Config Firebase (solo objeto window.firebaseConfig) -->
+  <script src="firebase-config.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      onSnapshot,
+      query,
+      orderBy,
+      enableIndexedDbPersistence,
+      doc,
+      getDoc,
+      updateDoc,
+      addDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    // Inicializar Firebase con config global
+    const app  = initializeApp(window.firebaseConfig);
+    const db   = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Persistencia offline (sin toasts molestos)
+    enableIndexedDbPersistence(db)
+      .then(() => console.log("Persistencia offline habilitada - Tienda"))
+      .catch(err => console.log("Persistencia no disponible", err));
+
+    // Parámetro de categoría en la URL (si llega desde index)
+    const params = new URLSearchParams(window.location.search);
+    let currentFilter = params.get("categoria") || "TODAS";  // <-- filtro actual
+
+    // Elementos DOM
+    const productosDiv   = document.getElementById("productos");
+    const carritoUl      = document.getElementById("lista-carrito");
+    const totalSpan      = document.getElementById("total");
+    const pagarBtn       = document.getElementById("pagar");
+    const cartBadge      = document.getElementById("cart-badge");
+    const limpiarBtn     = document.getElementById("limpiar-carrito");
+
+    const userNameSpan   = document.getElementById("userName");
+    const logoutBtnNav   = document.getElementById("logoutBtn");
+    const navProductosItem = document.getElementById("navProductosItem");
+
+    // Botones de filtro (Todas, Sala, Cocina, ...)
+    const filterButtons = document.querySelectorAll("[data-filter]");
+
+    let carrito       = [];
+    let productosData = [];     // todos los productos
+    let currentUser   = null;
+    let currentUserKey = "anon";
+
+    // --- Filtros de categoría en la tienda ---
+    function syncFilterButtons() {
+      // Marca como "active" el botón que coincide con currentFilter
+      filterButtons.forEach(btn => {
+        btn.classList.toggle("btn-primary", btn.dataset.filter === currentFilter);
+        btn.classList.toggle("btn-outline-secondary", btn.dataset.filter !== currentFilter);
+      });
+    }
+
+    filterButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        currentFilter = btn.dataset.filter || "TODAS";   // cambia filtro actual
+        syncFilterButtons();
+
+        // Actualizar la URL (para que se vea ?categoria=Sala, etc.)
+        const url = new URL(window.location.href);
+        if (currentFilter === "TODAS") {
+          url.searchParams.delete("categoria");
+        } else {
+          url.searchParams.set("categoria", currentFilter);
+        }
+        window.history.replaceState({}, "", url);
+
+        renderProductos(); // vuelve a pintar la lista usando el filtro nuevo
+      });
+    });
+
+    // Sincroniza el estado inicial del filtro con lo que venga en la URL
+    syncFilterButtons();
+
+    // --- Carrito por usuario (se guarda en localStorage) ---
+    function getCartStorageKey() {
+      return `carrito_${currentUserKey}`;
+    }
+
+    function cargarCarritoDesdeStorage() {
+      const saved = localStorage.getItem(getCartStorageKey());
+      carrito = saved ? JSON.parse(saved) : [];
+      mostrarCarrito();
+      updateCartBadge();
+    }
+
+    function guardarCarritoEnStorage() {
+      localStorage.setItem(getCartStorageKey(), JSON.stringify(carrito));
+    }
+
+    // Toast simple Bootstrap
+    function showAlert(message, type) {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+      alertDiv.style.zIndex = '1060';
+      alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.body.appendChild(alertDiv);
+      setTimeout(() => alertDiv.remove(), 4000);
+    }
+
+    // --- Sesión / Navbar ---
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user || null;
+      currentUserKey = user ? user.uid : "anon";
+
+      if (user) {
+        userNameSpan.textContent = user.displayName || user.email || "Usuario";
+        logoutBtnNav.style.display = "block";
+
+        // Mostrar enlace "Productos" solo si es admin
+        const esAdmin = user.email && user.email.endsWith("@admin.com");
+        if (navProductosItem) {
+          navProductosItem.style.display = esAdmin ? "block" : "none";
+        }
+      } else {
+        userNameSpan.textContent = "Login";
+        logoutBtnNav.style.display = "none";
+        if (navProductosItem) navProductosItem.style.display = "none";
+      }
+
+      cargarCarritoDesdeStorage();
+    });
+
+    if (logoutBtnNav) {
+      logoutBtnNav.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+          await signOut(auth);
+          alert("Sesión cerrada");
+          window.location.href = "index.html";
+        } catch (error) {
+          alert("Error al cerrar sesión: " + error.message);
+        }
+      });
+    }
+
+    // --- Carga de productos con soporte offline ---
+    function mostrarSinConexion() {
+      productosDiv.innerHTML = `
+        <div class="col-12 text-center py-5">
+          <div class="alert alert-warning">
+            <i class="bi bi-wifi-off display-4"></i>
+            <h4 class="mt-3">Sin conexión</h4>
+            <p>No hay datos cacheados disponibles.</p>
+            <p>Conéctate a internet para cargar productos por primera vez.</p>
+            <button class="btn btn-primary" onclick="location.reload()">
+              <i class="bi bi-arrow-clockwise"></i> Reintentar
+            </button>
+            <a href="index.html" class="btn btn-outline-secondary ms-2">
+              <i class="bi bi-house"></i> Volver al inicio
+            </a>
+          </div>
+        </div>
+      `;
+    }
+
+    function cargarProductos() {
+      const cache = localStorage.getItem("productosCache");
+      if (cache && !navigator.onLine) {
+        productosData = JSON.parse(cache);
+        console.log("Mostrando productos desde cache (offline)");
+        renderProductos();
+        return;
+      }
+
+      const productosRef = collection(db, "productos");
+      const q = query(productosRef, orderBy("createdAt", "desc"));
+
+      onSnapshot(q, (snapshot) => {
+        productosData = snapshot.docs.map(docSnap => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            clave: data.clave || "",
+            nombre: data.nombre || "Sin nombre",
+            precio: Number(data.precio) || 0,
+            categoria: data.categoria || "Sin categoría",
+            stock: Number(data.stock) || 0,
+            descripcion: data.descripcion || "Sin descripción",
+            imagenes: data.imagenes || [],
+            imagenUrl: data.imagenUrl || (data.imagenes?.[0] || "https://via.placeholder.com/300x200?text=Imagen+No+Disponible"),
+          };
+        });
+
+        localStorage.setItem("productosCache", JSON.stringify(productosData));
+        localStorage.setItem("cacheTimestamp", Date.now().toString());
+
+        renderProductos();
+      }, (error) => {
+        console.error("Error cargando productos:", error);
+        if (!navigator.onLine) {
+          const cache = localStorage.getItem("productosCache");
+          if (cache) {
+            productosData = JSON.parse(cache);
+            console.log("Mostrando productos cacheados (offline)");
+            renderProductos();
+          } else {
+            mostrarSinConexion();
+          }
+        }
+      });
+    }
+
+    // --- renderizado de productos respetando el filtro actual ---
+    function renderProductos() {
+      productosDiv.innerHTML = "";
+
+      let lista = productosData;
+
+      // Aplica filtro de categoría salvo que sea "TODAS"
+      if (currentFilter && currentFilter !== "TODAS") {
+        lista = lista.filter(p => p.categoria === currentFilter);
+      }
+
+      if (!lista || lista.length === 0) {
+        productosDiv.innerHTML = `
+          <div class="col-12 text-center py-5">
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle display-4"></i>
+              <h4 class="mt-3">No hay productos disponibles en esta categoría</h4>
+              <p>Prueba cambiando el filtro de categoría o vuelve más tarde.</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      lista.forEach(producto => {
+        const div = document.createElement("div");
+        div.classList.add("col-md-4", "mb-4");
+
+        const imagenesHTML = producto.imagenes && producto.imagenes.length > 1
+          ? `<div class="thumb-grid">
+              ${producto.imagenes.slice(0,4).map(url =>
+                `<img src="${url}" class="thumb" alt="${producto.nombre}">`
+              ).join("")}
+              ${producto.imagenes.length > 4 ? `
+                <div class="thumb bg-light text-center d-flex align-items-center justify-content-center">
+                  <small>+${producto.imagenes.length - 4}</small>
+                </div>` : ""}
+            </div>`
+          : "";
+
+        const sinStock = producto.stock <= 0;
+
+        div.innerHTML = `
+          <div class="card h-100 shadow-sm">
+            <img src="${producto.imagenUrl}"
+                 class="product-img card-img-top"
+                 alt="${producto.nombre}"
+                 onerror="this.src='https://via.placeholder.com/300x200?text=Imagen+No+Disponible'">
+            ${imagenesHTML}
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title">${producto.clave}</h5>
+              <h5 class="card-title">${producto.nombre}</h5>
+              <p class="card-text flex-grow-1">${producto.descripcion}</p>
+              <p class="card-text">
+                <strong class="text-success h5">$${producto.precio.toFixed(2)}</strong>
+              </p>
+              <p class="card-text">
+                <small class="text-muted">
+                  <i class="bi bi-tag"></i> ${producto.categoria} |
+                  <i class="bi bi-box"></i> ${producto.stock} disponibles
+                </small>
+              </p>
+              <div class="mt-auto">
+                <input type="number"
+                       min="1"
+                       max="${producto.stock}"
+                       value="1"
+                       id="cantidad-${producto.id}"
+                       class="form-control mb-2"
+                       placeholder="Cantidad"
+                       ${sinStock ? "disabled" : ""}>
+                <button class="btn text-white w-100" style="background-color: #F4A777;"
+                        onclick="agregarAlCarrito('${producto.id}')"
+                        ${sinStock ? "disabled" : ""}>
+                  <i class="bi bi-cart-plus"></i>
+                  ${sinStock ? "Fuera de stock" : "Añadir al Carrito"}
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        productosDiv.appendChild(div);
+      });
+    }
+
+    // --- Lógica carrito / compra ---
+    function calcularDescuento(precio, cantidad) {
+      if (cantidad >= 10) return precio * 0.9;
+      if (cantidad >= 5)  return precio * 0.95;
+      return precio;
+    }
+
+    // Hacemos global esta función porque se llama desde el HTML onclick
+    window.agregarAlCarrito = function(id) {
+      const producto = productosData.find(p => p.id === id);
+      if (!producto) return;
+
+      const cantidadInput = document.getElementById(`cantidad-${id}`);
+      const cantidad = parseInt(cantidadInput?.value) || 1;
+
+      if (cantidad <= 0) {
+        alert("La cantidad debe ser mayor a 0");
+        return;
+      }
+
+      if (cantidad > producto.stock) {
+        alert(`Solo hay ${producto.stock} unidades disponibles`);
+        return;
+      }
+
+      let itemExistente = carrito.find(p => p.id === id);
+
+      if (itemExistente) {
+        const nuevaCantidad = itemExistente.cantidad + cantidad;
+        if (nuevaCantidad > producto.stock) {
+          alert(`No puedes agregar más de ${producto.stock} unidades de este producto`);
+          return;
+        }
+        itemExistente.cantidad = nuevaCantidad;
+      } else {
+        carrito.push({
+          id: producto.id,
+          nombre: producto.nombre,
+          precio: producto.precio,
+          imagenUrl: producto.imagenUrl,
+          cantidad: cantidad
+        });
+      }
+
+      guardarCarritoEnStorage();
+      mostrarCarrito();
+      updateCartBadge();
+      showAlert(`${cantidad} x ${producto.nombre} agregado al carrito`, "success");
+
+      if (cantidadInput) cantidadInput.value = 1;
+    };
+
+    function mostrarCarrito() {
+      carritoUl.innerHTML = "";
+      let total = 0;
+
+      if (carrito.length === 0) {
+        carritoUl.innerHTML = `
+          <li class="list-group-item text-center text-muted py-5">
+            <i class="bi bi-cart-x display-1"></i>
+            <p class="mt-3 h5">Tu carrito está vacío</p>
+            <a href="#" class="btn btn-primary" data-bs-dismiss="offcanvas">
+              <i class="bi bi-arrow-left"></i> Seguir Comprando
+            </a>
+          </li>
+        `;
+        totalSpan.textContent = "0.00";
+        return;
+      }
+
+      carrito.forEach((item, index) => {
+        const precioConDescuento = calcularDescuento(item.precio, item.cantidad);
+        const subtotal = precioConDescuento * item.cantidad;
+        total += subtotal;
+
+        const li = document.createElement("li");
+        li.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+        li.innerHTML = `
+          <div class="d-flex align-items-center flex-grow-1">
+            <img src="${item.imagenUrl}"
+                 class="cart-item-img me-3"
+                 alt="${item.nombre}"
+                 onerror="this.src='https://via.placeholder.com/50x50?text=Img'">
+            <div class="flex-grow-1">
+              <strong class="d-block">${item.nombre}</strong>
+              <small class="text-muted">${item.cantidad} x ${item.precio.toFixed(2)}</small>
+            </div>
+          </div>
+          <div class="d-flex align-items-center">
+            <span class="badge bg-primary me-2">$${subtotal.toFixed(2)}</span>
+            <button class="btn btn-outline-danger btn-sm" onclick="eliminarDelCarrito(${index})">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        `;
+        carritoUl.appendChild(li);
+      });
+
+      totalSpan.textContent = total.toFixed(2);
+    }
+
+    window.eliminarDelCarrito = function(index) {
+      const item = carrito[index];
+      if (confirm(`¿Eliminar ${item.cantidad} x ${item.nombre} del carrito?`)) {
+        carrito.splice(index, 1);
+        guardarCarritoEnStorage();
+        mostrarCarrito();
+        updateCartBadge();
+      }
+    };
+
+    function updateCartBadge() {
+      const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+      cartBadge.textContent = totalItems;
+      cartBadge.classList.toggle("d-none", totalItems === 0);
+    }
+
+    limpiarBtn.addEventListener("click", () => {
+      if (carrito.length === 0) return;
+
+      if (confirm("¿Vaciar todo el carrito y regresar al inicio?")) {
+        carrito = [];
+        localStorage.removeItem(getCartStorageKey());
+        mostrarCarrito();
+        updateCartBadge();
+        setTimeout(() => window.location.href = "index.html", 1000);
+      }
+    });
+
+    pagarBtn.addEventListener("click", async () => {
+      if (carrito.length === 0) {
+        alert("Tu carrito está vacío");
+        return;
+      }
+
+      if (!navigator.onLine) {
+        alert("Necesitas conexión a internet para completar la compra.");
+        return;
+      }
+
+      if (!currentUser) {
+        alert("Inicia sesión para completar la compra.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const total = parseFloat(totalSpan.textContent) || 0;
+      const resumen = carrito.map(item =>
+        `• ${item.cantidad} x ${item.nombre} - $${(item.precio * item.cantidad).toFixed(2)}`
+      ).join("\n");
+
+      if (!confirm(`*Resumen de Compra*\n\n${resumen}\n\nTotal: $${total.toFixed(2)}\n\n¿Confirmar compra?`)) {
+        return;
+      }
+
+      try {
+        // 1. Verificar stock
+        for (const item of carrito) {
+          const prodRef = doc(db, "productos", item.id);
+          const snap = await getDoc(prodRef);
+          if (!snap.exists()) {
+            alert(`El producto ${item.nombre} ya no está disponible.`);
+            return;
+          }
+          const data = snap.data();
+          const stockActual = Number(data.stock) || 0;
+          if (stockActual < item.cantidad) {
+            alert(`No hay stock suficiente para ${item.nombre}. Disponible: ${stockActual}.`);
+            return;
+          }
+        }
+
+        // 2. Descontar stock
+        for (const item of carrito) {
+          const prodRef = doc(db, "productos", item.id);
+          const snap = await getDoc(prodRef);
+          const data = snap.data();
+          const stockActual = Number(data.stock) || 0;
+          await updateDoc(prodRef, { stock: stockActual - item.cantidad });
+        }
+
+        // 3. Registrar compra en historial del usuario
+        const comprasRef = collection(db, "usuarios", currentUser.uid, "compras");
+        await addDoc(comprasRef, {
+          fecha: serverTimestamp(),
+          total: total,
+          items: carrito.map(item => ({
+            productoId: item.id,
+            nombre: item.nombre,
+            cantidad: item.cantidad,
+            precioUnitario: item.precio,
+            subtotal: item.precio * item.cantidad
+          }))
+        });
+
+        alert("¡Compra realizada con éxito! Gracias por tu compra.");
+
+        carrito = [];
+        localStorage.removeItem(getCartStorageKey());
+        mostrarCarrito();
+        updateCartBadge();
+
+        setTimeout(() => window.location.href = "index.html", 1500);
+      } catch (error) {
+        console.error("Error al procesar compra:", error);
+        alert("Error al procesar tu compra. Inténtalo de nuevo.");
+      }
+    });
+
+    // Service worker PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('sw register failed', err));
+    }
+
+    // Arranque: cargar productos
+    cargarProductos();
+  </script>
+</body>
+</html>

@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro / Login</title>
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background-color: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    /* Estilos originales del contenedor de login/registro */
+    .container {
+      background-color: #fff;
+      border-radius: 30px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+      position: relative;
+      overflow: hidden;
+      width: 768px;
+      max-width: 100%;
+      min-height: 480px;
+    }
+
+    .container p {
+      font-size: 14px;
+      line-height: 20px;
+      letter-spacing: 0.3px;
+      margin: 20px 0;
+    }
+
+    .container span {
+      font-size: 12px;
+    }
+
+    .container button {
+      background-color: #D8917C;
+      color: #fff;
+      font-size: 12px;
+      padding: 10px 45px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    .container button.hidden {
+      background-color: transparent;
+      border-color: #fff;
+    }
+
+    .container form {
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 0 40px;
+      height: 100%;
+    }
+
+    .container input {
+      background-color: #eee;
+      border: none;
+      margin: 8px 0;
+      padding: 10px 15px;
+      font-size: 13px;
+      border-radius: 8px;
+      width: 100%;
+      outline: none;
+    }
+
+    .form-container {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      transition: all 0.6s ease-in-out;
+    }
+
+    .sign-in {
+      left: 0;
+      width: 50%;
+      z-index: 2;
+    }
+
+    .container.active .sign-in {
+      transform: translateX(100%);
+    }
+
+    .sign-up {
+      left: 0;
+      width: 50%;
+      opacity: 0;
+      z-index: 1;
+    }
+
+    .container.active .sign-up {
+      transform: translateX(100%);
+      opacity: 1;
+      z-index: 5;
+      animation: move 0.6s;
+    }
+
+    @keyframes move {
+      0%, 49.99% {
+        opacity: 0;
+        z-index: 1;
+      }
+      50%, 100% {
+        opacity: 1;
+        z-index: 5;
+      }
+    }
+
+    .toggle-container {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 50%;
+      height: 100%;
+      overflow: hidden;
+      transition: all 0.6s ease-in-out;
+      z-index: 1000;
+    }
+
+    .container.active .toggle-container {
+      transform: translateX(-100%);
+    }
+
+    .toggle {
+      background-color: #A7A59A;
+      height: 100%;
+      color: #fff;
+      position: relative;
+      left: -100%;
+      width: 200%;
+      transform: translateX(0);
+      transition: all 0.6s ease-in-out;
+    }
+
+    .container.active .toggle {
+      transform: translateX(50%);
+    }
+
+    .toggle-panel {
+      position: absolute;
+      width: 50%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 0 30px;
+      text-align: center;
+      top: 0;
+      transform: translateX(0);
+      transition: all 0.6s ease-in-out;
+      background-color: #A7A59A;
+    }
+
+    .toggle-left {
+      transform: translateX(-200%);
+    }
+
+    .container.active .toggle-left {
+      transform: translateX(0);
+    }
+
+    .toggle-right {
+      right: 0;
+      transform: translateX(0);
+    }
+
+    .container.active .toggle-right {
+      transform: translateX(200%);
+    }
+
+    /* NUEVO: vista de perfil con más estilo */
+    #profileView {
+      display: none; /* se muestra solo cuando hay sesión */
+      max-width: 900px;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    .profile-card {
+      background-color: #ffffff;
+      border-radius: 24px;
+      padding: 24px 28px;
+      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.12);
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #f4a95e, #ff7a55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 2rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .profile-info h2 {
+      margin: 0 0 8px;
+    }
+
+    .profile-info p {
+      margin: 2px 0;
+      font-size: 0.95rem;
+      color: #444;
+    }
+
+    .profile-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #profileLogout {
+      background-color:#f44336;
+      color:#fff;
+      border:none;
+      border-radius:8px;
+      padding:8px 16px;
+      cursor:pointer;
+      font-weight: 600;
+    }
+
+    #profileLogout:hover {
+      opacity: 0.9;
+    }
+
+    .profile-history {
+      background-color: #ffffff;
+      border-radius: 20px;
+      padding: 20px 24px;
+      box-shadow: 0 6px 24px rgba(15, 23, 42, 0.10);
+    }
+
+    .profile-history h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    #purchaseList {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    #purchaseList li {
+      border-bottom: 1px solid #eee;
+      padding: 10px 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.95rem;
+    }
+
+    #purchaseList li:last-child {
+      border-bottom: none;
+    }
+
+    #purchaseEmpty {
+      color: #777;
+      font-size: 0.95rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Contenedor de login/registro -->
+  <div class="container" id="container">
+    <div class="form-container sign-up">
+      <form>
+        <h1>Crear cuenta</h1>
+        <span>Usa tu correo para registrarte</span>
+
+        <input type="text" id="registerName" placeholder="Nombre" required>
+        <input type="email" id="registerEmail" placeholder="Ej. ejemplo@gmail.com" required>
+        <input type="password" id="registerPassword" placeholder="Contraseña" required>
+        <button id="registerButton">Registrarse</button>
+      </form>
+    </div>
+
+    <div class="form-container sign-in">
+      <form>
+        <h1>Iniciar sesión</h1>
+        <span>Usa tu correo y contraseña</span>
+
+        <input type="email" id="loginEmail" placeholder="Ej. ejemplo@gmail.com">
+        <input type="password" id="loginPassword" placeholder="Contraseña">
+        <button id="loginButton">Iniciar sesión</button>
+      </form>
+    </div>
+
+    <div class="toggle-container">
+      <div class="toggle">
+        <div class="toggle-panel toggle-left">
+          <h1>Hola!</h1>
+          <p>Registra tu cuenta</p>
+          <button class="hidden" id="login">Iniciar sesión</button>
+        </div>
+
+        <div class="toggle-panel toggle-right">
+          <h1>Bienvenido</h1>
+          <p>Usa tu correo y contraseña</p>
+          <button class="hidden" id="register">Registrarse</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NUEVO: vista de perfil con diseño más elaborado -->
+  <div id="profileView">
+    <div class="profile-card">
+      <div class="profile-avatar">
+        <!-- Icono simple, no cambiamos con JS para no complicar lógica -->
+        <span>HE</span>
+      </div>
+      <div class="profile-info">
+        <h2>Mi perfil</h2>
+        <p><strong>Nombre:</strong> <span id="profileName"></span></p>
+        <p><strong>Correo:</strong> <span id="profileEmail"></span></p>
+        <div class="profile-actions">
+          <button id="profileLogout">Cerrar sesión</button>
+          <a href="tienda.html" style="text-decoration:none;">
+            <button type="button" style="background-color:#2563eb; color:#fff; border:none; border-radius:8px; padding:8px 16px; cursor:pointer; font-weight:600;">
+              Ir a la tienda
+            </button>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-history">
+      <h3>Historial de compras</h3>
+      <p id="purchaseEmpty">Aún no tienes compras registradas.</p>
+      <ul id="purchaseList"></ul>
+    </div>
+  </div>
+
+  <!-- Firebase v8 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <!-- Config global -->
+  <script src="firebase-config.js"></script>
+
+  <script>
+    // Inicializar Firebase con la config compartida
+    firebase.initializeApp(window.firebaseConfig);
+    const auth = firebase.auth();
+    const db   = firebase.firestore();
+
+    const container    = document.getElementById('container');
+    const profileView  = document.getElementById('profileView');
+    const profileName  = document.getElementById('profileName');
+    const profileEmail = document.getElementById('profileEmail');
+    const purchaseList = document.getElementById('purchaseList');
+    const purchaseEmpty = document.getElementById('purchaseEmpty');
+
+    const registerToggleBtn = document.getElementById('register');
+    const loginToggleBtn    = document.getElementById('login');
+
+    // Toggle entre login y registro
+    registerToggleBtn.addEventListener('click', () => {
+      container.classList.add("active");
+    });
+
+    loginToggleBtn.addEventListener('click', () => {
+      container.classList.remove("active");
+    });
+
+    const registerBtn = document.getElementById("registerButton");
+    const loginBtn    = document.getElementById("loginButton");
+
+    // Registro
+    registerBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+
+      const name     = document.getElementById("registerName").value.trim();
+      const email    = document.getElementById("registerEmail").value.trim();
+      const password = document.getElementById("registerPassword").value.trim();
+
+      if (!name || !email || !password) {
+        alert("Por favor, completa todos los campos.");
+        return;
+      }
+
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+
+        await user.updateProfile({ displayName: name });
+
+        await db.collection("usuarios").doc(user.uid).set({
+          nombre: name,
+          correo: email,
+          uid: user.uid,
+          creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        alert("Registro exitoso. Bienvenido/a, " + name);
+        window.location.href = "index.html";
+      } catch (error) {
+        alert("Error: " + error.message);
+      }
+    });
+
+    // Login
+    loginBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+
+      const email    = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+
+      if (!email || !password) {
+        alert("Completa todos los campos.");
+        return;
+      }
+
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        alert("Inicio de sesión exitoso");
+        window.location.href = "index.html";
+      } catch (error) {
+        alert("Error: " + error.message);
+      }
+    });
+
+    // Cerrar sesión desde el perfil
+    document.getElementById('profileLogout').addEventListener('click', async () => {
+      try {
+        await auth.signOut();
+        alert('Sesión cerrada');
+        window.location.href = 'index.html';
+      } catch (error) {
+        alert('Error al cerrar sesión: ' + error.message);
+      }
+    });
+
+    function cargarHistorialCompras(user) {
+      if (!user) return;
+
+      purchaseList.innerHTML = "";
+      purchaseEmpty.style.display = "block";
+
+      db.collection('usuarios')
+        .doc(user.uid)
+        .collection('compras')
+        .orderBy('fecha', 'desc')
+        .onSnapshot((snapshot) => {
+          purchaseList.innerHTML = "";
+
+          if (snapshot.empty) {
+            purchaseEmpty.style.display = "block";
+            return;
+          }
+
+          purchaseEmpty.style.display = "none";
+
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const li = document.createElement('li');
+
+            const fecha = data.fecha ? data.fecha.toDate() : null;
+            const fechaTexto = fecha
+              ? fecha.toLocaleDateString('es-MX') + ' ' +
+                fecha.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+              : '';
+
+            const items = data.items || [];
+            const itemsHtml = items.map(item => {
+              const subtotal = Number(item.subtotal || 0).toFixed(2);
+              return `${item.cantidad} x ${item.nombre} ($${subtotal})`;
+            }).join('<br>');
+
+            const total = Number(data.total || 0).toFixed(2);
+
+            li.innerHTML = `
+              <div>
+                <strong>${fechaTexto}</strong><br>
+                ${itemsHtml}
+              </div>
+              <div style="text-align:right; font-weight:bold; min-width:100px;">
+                $${total}
+              </div>
+            `;
+            purchaseList.appendChild(li);
+          });
+        }, (error) => {
+          console.error('Error al leer historial de compras:', error);
+        });
+    }
+
+    // Si hay sesión: mostrar perfil, si no: mostrar login/registro
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        container.style.display = 'none';
+        profileView.style.display = 'block';
+
+        profileName.textContent  = user.displayName || 'Sin nombre';
+        profileEmail.textContent = user.email || '';
+
+        cargarHistorialCompras(user);
+      } else {
+        container.style.display = 'block';
+        profileView.style.display = 'none';
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('sw register failed', err));
+    }
+  </script>
+</body>
+</html>
